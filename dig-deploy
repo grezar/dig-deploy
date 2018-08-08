@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+VERSION="0.1.0"
+PROJECT_NAME=$(basename $(pwd))
+PROJECT_PATH=$(pwd)
+PROJECTS_PATH=$(pwd)
+VERBOSE=false
+BASIC_AUTH=false
+DIGDAG_CLI=$(which digdag)
+AWS_CLI=$(which aws)
+
+while [[ $# -gt 0 ]]
+do
+  option="$1"
+
+  case option in
+    -n|--name)
+      PROJECT_NAME="$2"
+      shift
+      ;;
+    -p|--project)
+      PROJECT_PATH="$2"
+      shift
+    -P|--projects)
+      PROJECTS_PATH="$2"
+      shift
+      ;;
+    -r|--revision)
+      PROJECT_REVISION="$2"
+      shift
+      ;;
+    -s|--schedule-from)
+      SCHEDULE_FROM="$2"
+      shift
+      ;;
+    -e|--endpoint)
+      ENDPOINT="$2"
+      shift
+      ;;
+    -v|--verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -c|--cloud-provider)
+      CLOUD_PROVIDER="$2"
+      shift
+      ;;
+    -k|--aws-access-key)
+      AWS_ACCESS_KEY_ID="$2"
+      shift
+      ;;
+    -s|--aws-secret-key)
+      AWS_SECRET_ACCESS_KEY="$2"
+      shift
+      ;;
+    -g|--aws-security-group-id)
+      AWS_SECURITY_GROUP_ID="$2"
+      shift
+      ;;
+    -b|--basic-auth)
+      BASIC_AUTH=true
+      shift
+      ;;
+    --basic-auth-user)
+      BASIC_AUTH_USER="$2"
+      shift
+      ;;
+    --basic-auth-pass)
+      BASIC_AUTH_PASS="$2"
+      shift
+      ;;
+    *)
+      exit2
+    ;;
+  esac
+done
+
+[ $VERBOSE == true ] && set -x
+require digdag
+[ $CLOUD_PROVIDER == "aws" ] && require aws
