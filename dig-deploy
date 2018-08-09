@@ -9,6 +9,34 @@ BASIC_AUTH=false
 DIGDAG_CLI=$(which digdag)
 AWS_CLI=$(which aws)
 
+function usage() {
+  cat <<EOM
+Usage: dig-deploy [options...]
+
+Options:
+  -n | --name              Digdag project name
+  -p | --project           Digdag project path. (default: current directory)
+  -P | --projects          Digdag projects path which multiple digdag projects are placed (default: current directory)
+  -r | --revision          Unique name of the digdga project revision. If this is not set, a random UUID is automatically generated
+  -s | --schedule-from     Start schedules from this time. If this is not set, system time of the server is used
+  -e | --endpoint          HTTP endpoint of the digdag server (default: http://127.0.0.1:65432)
+  -c | --cloud-provider    The cloud service provider which remote digdag server is runnning on. (e.g. Amazon Web Service, Google Cloud Platform)
+  -k | --aws-access-key    AWS Access Key ID - If you set this --cloud-provider, --aws-security-group-id and --aws-access-key are needed
+  -s | --aws-secret-key    AWS Secret Access Key - If you set this --cloud-provider, --aws-security-group-id and --aws-access-key are needed
+  -b | --basic-auth        If remote digdag server is using basic authentication, this is necessary with --basic-auth-user and --basic--auth-pass
+  --basic-auth-user        Basic Authentication User
+  --basic-auth-pass        Basic AUthentication Password
+  -v | --verbose           Verbose output
+
+Requirements:
+  digdag: https://www.digdag.io
+EOM
+
+  exit 3
+}
+
+[ $# == 0 ] && usage
+
 while [[ $# -gt 0 ]]
 do
   option="$1"
@@ -21,6 +49,7 @@ do
     -p|--project)
       PROJECT_PATH="$2"
       shift
+      ;;
     -P|--projects)
       PROJECTS_PATH="$2"
       shift
@@ -70,7 +99,8 @@ do
       shift
       ;;
     *)
-      exit2
+      usage
+      exit 2
     ;;
   esac
 done
