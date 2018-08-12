@@ -48,6 +48,22 @@ function buildBasicAuthURL() {
   ENDPOINT=$(echo $ENDPOINT | sed -E 's|(https?://)|\1$BASIC_AUTH_USER:BASIC_AUTH_PASS@|')
 }
 
+function discriminateScheme() {
+  [ echo $ENDPOINT | grep HTTPS ] && PORT=443 || PORT=80
+}
+
+function getOwnIPAddress() {
+  OWN_IP="$(curl ifconfig.io)/32"
+}
+
+function openAWSSecurityGroupBeforePush() {
+  aws ec2 authorize-security-group-ingress --group-id $ALB_SECURITY_GROUP_ID --protocol tcp --port $PORT --cidr $OWN_IP
+}
+
+function closeAWSSecurityGroupAfterPush() {
+  aws ec2 revoke-security-group-ingress --group-id $ALB_SECURITY_GROUP_ID --protocol tcp --port $PORT --cidr $OWN_IP
+}
+
 function digdagPush() {
   $DIGDAG_CLI push $PROJECT_NAME --project $PROJECT_PATH --endpoint $ENDPOINT $PROJECT_REVISION $SCHEDULE_FROM
 }
@@ -57,6 +73,7 @@ function pushProject() {
     buildBasicAuthURL
     digdagPush
   elif [ $CLOUD_PROVIDER = "aws" ]; then
+    discriminateScheme
     openAWSSecurityGroupBeforePush
     digdagPush
     closeAWSSecurityGroupAfterPush
