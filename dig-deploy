@@ -4,6 +4,7 @@ VERSION="0.1.0"
 PROJECT_NAME=$(basename $(pwd))
 PROJECT_PATH=$(pwd)
 PROJECTS_PATH=$(pwd)
+ENDPOINT="http://127.0.0.1:65432"
 VERBOSE=false
 BASIC_AUTH=false
 DIGDAG_CLI=$(which digdag)
@@ -43,13 +44,36 @@ function require() {
     }
 }
 
+function buildBasicAuthURL() {
+  ENDPOINT=$(echo $ENDPOINT | sed -E 's|(https?://)|\1$BASIC_AUTH_USER:BASIC_AUTH_PASS@|')
+}
+
+function digdagPush() {
+  $DIGDAG_CLI push $PROJECT_NAME --project $PROJECT_PATH --endpoint $ENDPOINT $PROJECT_REVISION $SCHEDULE_FROM
+}
+
+function pushProject() {
+  if [ $BASIC_AUTH = true ]; then
+    buildBasicAuthURL
+    digdagPush
+  elif [ $CLOUD_PROVIDER = "aws" ]; then
+    openAWSSecurityGroupBeforePush
+    digdagPush
+    closeAWSSecurityGroupAfterPush
+  else
+    digdagPush
+  fi
+}
+
+echo $#
 [ $# == 0 ] && usage
 
 while [[ $# -gt 0 ]]
 do
   option="$1"
+  echo $option
 
-  case option in
+  case $option in
     -n|--name)
       PROJECT_NAME="$2"
       shift
@@ -63,11 +87,11 @@ do
       shift
       ;;
     -r|--revision)
-      PROJECT_REVISION="$2"
+      PROJECT_REVISION="-r $2"
       shift
       ;;
     -s|--schedule-from)
-      SCHEDULE_FROM="$2"
+      SCHEDULE_FROM="--schedule-from $2"
       shift
       ;;
     -e|--endpoint)
@@ -76,7 +100,6 @@ do
       ;;
     -v|--verbose)
       VERBOSE=true
-      shift
       ;;
     -c|--cloud-provider)
       CLOUD_PROVIDER="$2"
@@ -96,7 +119,6 @@ do
       ;;
     -b|--basic-auth)
       BASIC_AUTH=true
-      shift
       ;;
     --basic-auth-user)
       BASIC_AUTH_USER="$2"
@@ -111,8 +133,10 @@ do
       exit 2
     ;;
   esac
+  shift
 done
 
 [ $VERBOSE == true ] && set -x
 require digdag
 [ $CLOUD_PROVIDER == "aws" ] && require aws
+buildBasicAuthURL
